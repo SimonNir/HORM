@@ -34,11 +34,7 @@ def compute_hessian(coords, energy, forces=None):
 
 def hess2eigenvalues(hess):
     """Convert Hessian to eigenvalues with proper unit conversion"""
-    hartree_to_ev = 27.2114
-    bohr_to_angstrom = 0.529177
-    ev_angstrom_2_to_hartree_bohr_2 = (bohr_to_angstrom**2) / hartree_to_ev
-    
-    hess = hess * ev_angstrom_2_to_hartree_bohr_2
+
     eigen_values, _ = torch.linalg.eigh(hess)
     return eigen_values
 

@@ -1,0 +1,3 @@
+[submodule "fairchem-esen"]
+	path = fairchem-esen
+	url = https://github.com/SimonNir/fairchem-esen.git

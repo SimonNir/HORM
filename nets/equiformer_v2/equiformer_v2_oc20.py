@@ -204,7 +204,7 @@ class EquiformerV2_OC20(BaseModel):
         self.weight_init = weight_init
         assert self.weight_init in ['normal', 'uniform']
 
-        self.device = torch.cuda.current_device()
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.grad_forces = False
         self.num_resolutions = len(self.lmax_list)

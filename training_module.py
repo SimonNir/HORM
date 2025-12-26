@@ -107,8 +107,14 @@ class PotentialModule(LightningModule):
                 timesteps=5000,
                 condition_time=False,
             )
+        elif self.model_config['name'] == 'eSEN':
+            from nets.eSEN.esen_wrapper import ESENWrapper
+            self.potential = ESENWrapper(
+                checkpoint_path=model_config.get('checkpoint_path', 'ckpt/esen_sm_direct_all.pt'),
+                device=model_config.get('device', 'cuda'),
+            )
         else:
-            print("Please Check your model name (choose from 'EquiformerV2', 'AlphaNet', 'LEFTNet', 'LEFTNet-df')")           
+            print("Please Check your model name (choose from 'EquiformerV2', 'AlphaNet', 'LEFTNet', 'LEFTNet-df', 'eSEN')")           
         self.optimizer_config = optimizer_config
         self.training_config = training_config
         self.pos_require_grad = True
@@ -304,6 +310,11 @@ class PotentialModule(LightningModule):
             pos_require_grad=self.pos_require_grad
         )
         if self.model_config['name'] == 'LEFTNet':
+            hat_ae, hat_forces = self.potential.forward_autograd(
+                batch.to(self.device),
+            )
+        elif self.model_config['name'] == 'eSEN':
+            # eSEN uses forward_autograd for smooth forces
             hat_ae, hat_forces = self.potential.forward_autograd(
                 batch.to(self.device),
             )

@@ -41,7 +41,8 @@ def hess2eigenvalues(hess):
 
 def evaluate(lmdb_path,  checkpoint_path):
 
-    ckpt = torch.load(checkpoint_path)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    ckpt = torch.load(checkpoint_path, map_location=device)
     model_name =ckpt['hyper_parameters']['model_config']['name']
 
     print(f"Model name: {model_name}")
@@ -49,7 +50,7 @@ def evaluate(lmdb_path,  checkpoint_path):
     pm = PotentialModule.load_from_checkpoint(
         checkpoint_path,
         strict=False,
-    ).potential.to('cuda')
+    ).potential.to(device)
 
     dataset = LmdbDataset(lmdb_path)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
@@ -66,7 +67,7 @@ def evaluate(lmdb_path,  checkpoint_path):
     for batch in tqdm(dataloader, desc='Evaluating', total=len(dataloader)):
 
 
-        batch = batch.to('cuda')
+        batch = batch.to(device)
         batch.pos.requires_grad_()
         batch = compute_extra_props(batch)
 
@@ -127,7 +128,7 @@ if __name__ == '__main__':
 
     torch.manual_seed(42)
 
-    checkpoint_path = 'ckpt/left.ckpt'
+    checkpoint_path = 'ckpt/eqv2.ckpt'
     lmdb_path = 'data/sample_100.lmdb'
     
     evaluate(lmdb_path, checkpoint_path)

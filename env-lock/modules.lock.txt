@@ -1,0 +1,9 @@
+
+Currently Loaded Modules:
+  1) CCconfig   2) gentoo/2023 (S)   3) mii/1.1.2
+
+  Where:
+   S:  Module is Sticky, requires --force to unload or purge
+
+ 
+

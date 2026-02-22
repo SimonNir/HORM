@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=esen-horm-EFH
-#SBATCH --output=/home/simonnir/esen_horm/HORM/logs/esen_EFH_%j.out
-#SBATCH --error=/home/simonnir/esen_horm/HORM/logs/esen_EFH_%j.err
+#SBATCH --output=/scratch/snirenbe/esen_horm_logs/esen_EFH_%j.out
+#SBATCH --error=/scratch/snirenbe/esen_horm_logs/esen_EFH_%j.err
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1

@@ -108,11 +108,28 @@ class PotentialModule(LightningModule):
                 condition_time=False,
             )
         elif self.model_config['name'] == 'eSEN':
-            from nets.eSEN.esen_wrapper import ESENWrapper
-            self.potential = ESENWrapper(
-                checkpoint_path=model_config.get('checkpoint_path', 'ckpt/esen_sm_direct_all.pt'),
-                device=model_config.get('device', 'cuda'),
-            )
+            # Check if training from scratch or using pretrained weights
+            from_scratch = model_config.get('from_scratch', False)
+            
+            if from_scratch:
+                print("\n" + "="*60)
+                print("TRAINING ESEN FROM SCRATCH (Random Initialization)")
+                print("="*60 + "\n")
+                from nets.eSEN.esen_wrapper_scratch import ESENWrapperScratch
+                self.potential = ESENWrapperScratch(
+                    checkpoint_path=model_config.get('checkpoint_path', 'ckpt/esen_sm_conserving_all.pt'),
+                    device=model_config.get('device', 'cuda'),
+                    load_weights=False,  # Don't load pretrained weights
+                )
+            else:
+                print("\n" + "="*60)
+                print("FINE-TUNING ESEN (Loading Pretrained Weights)")
+                print("="*60 + "\n")
+                from nets.eSEN.esen_wrapper import ESENWrapper
+                self.potential = ESENWrapper(
+                    checkpoint_path=model_config.get('checkpoint_path', 'ckpt/esen_sm_conserving_all.pt'),
+                    device=model_config.get('device', 'cuda'),
+                )
         else:
             print("Please Check your model name (choose from 'EquiformerV2', 'AlphaNet', 'LEFTNet', 'LEFTNet-df', 'eSEN')")           
         self.optimizer_config = optimizer_config
@@ -326,19 +343,32 @@ class PotentialModule(LightningModule):
         hat_forces = hat_forces.to(self.device)
         ae = batch.ae.to(self.device)
         forces = batch.forces.to(self.device)
-        hessian_loss = self.get_force_jac_loss(hat_forces, batch, batch.hessian)
+        
+        # Compute Hessian loss only if enabled
+        if self.training_config.get('use_hessian', True):
+            # NHR (num_samples): HORM paper uses 1 for autograd, 2 for direct-force
+            num_hessian_rows = self.training_config.get('num_hessian_rows', 2)
+            hessian_loss = self.get_force_jac_loss(hat_forces, batch, batch.hessian, num_samples=num_hessian_rows)
+            hessian_weight = self.training_config.get('hessian_weight', 4.0)
+        else:
+            hessian_loss = torch.tensor(0.0, device=self.device)
+            hessian_weight = 0.0
+        
         eloss = self.loss_fn(ae, hat_ae)
         floss = self.loss_fn(forces, hat_forces)
         info = {
             "MAE_E": eloss.detach().item(),
             "MAE_F": floss.detach().item(),
-            "MAE_hessian":hessian_loss.detach().item(),
+            "MAE_hessian": hessian_loss.detach().item(),
         }
         self.MAEEval.reset()
         self.MAPEEval.reset()
         self.cosineEval.reset()
         
-        loss = floss * 100 + eloss * 4 + hessian_loss * 4
+        # Weighted loss: configurable weights (default E:4, F:100, H:4)
+        energy_weight = self.training_config.get('energy_weight', 4.0)
+        force_weight = self.training_config.get('force_weight', 100.0)
+        loss = floss * force_weight + eloss * energy_weight + hessian_loss * hessian_weight
         return loss, info
 
     def training_step(self, batch, batch_idx):

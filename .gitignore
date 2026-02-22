@@ -1,8 +1,27 @@
 __pycache__/
 *.egg-info
+*.pyc
 wandb/
-
 .venv/
+ckpt/
+*.ckpt
+*.pt
+
+# Output dirs (large, regenerable)
+logs/
+checkpoint/
+results/
+
+# Private / session notes — not for tracking
+CLAUDE.md
+notes_*.md
+README_ESEN.md
+ESEN_QUICKSTART.md
+configs/esen_comparison_study.md
+
+# OS / editor noise
+.DS_Store
+*.swp.venv/
 
 data/RGD*
 data/ts1*

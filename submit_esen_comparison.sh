@@ -1,12 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=esen-horm-comparison
-#SBATCH --output=logs/esen_comparison_%j.out
-#SBATCH --error=logs/esen_comparison_%j.err
-#SBATCH --time=48:00:00
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --output=/home/simonnir/esen_horm/HORM/logs/esen_comparison_%j.out
+#SBATCH --error=/home/simonnir/esen_horm/HORM/logs/esen_comparison_%j.err
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
 
 # ESEN Training Comparison on HORM Dataset
 # Trains eSEN from SCRATCH (random init, not from OMol25 pretrained weights)
@@ -22,6 +21,9 @@
 # Run as:
 #   sbatch submit_esen_comparison.sh            # all three variants sequentially
 #   sbatch --export=MODE=ef submit_esen_comparison.sh  # single variant
+#
+# NOTE: Running all three sequentially in 24h may time out.
+# Prefer the individual submit_e/ef/efh.sh scripts with auto-resume instead.
 
 echo "============================================"
 echo "eSEN HORM Training Comparison (From Scratch)"
@@ -68,21 +70,26 @@ echo "  WandB:      $USE_WANDB"
 echo ""
 
 # ── Environment setup ────────────────────────────────────────────────────────
-# Uncomment and adapt for your cluster:
-# module load cuda/12.1
-# module load python/3.10
-# source /path/to/venv/bin/activate   # or: conda activate myenv
+module load StdEnv/2023 gcc/12.3 cuda/12.6
 
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
+# Set cache dirs to writable locations (avoid permission issues on cluster)
+export UV_CACHE_DIR=/scratch/snirenbe/.cache/uv
+export MPLCONFIGDIR=/scratch/snirenbe/.cache/matplotlib
+export XDG_CACHE_HOME=/scratch/snirenbe/.cache
+export FAIRCHEM_CACHE_DIR=/scratch/snirenbe/.cache/fairchem
+export WANDB_CACHE_DIR=/scratch/snirenbe/wandb
+export WANDB_CONFIG_DIR=/scratch/snirenbe/wandb
+export WANDB_DIR=/scratch/snirenbe/wandb
+mkdir -p "$UV_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME" "$FAIRCHEM_CACHE_DIR" "$WANDB_CACHE_DIR" "$WANDB_DIR"
+
 # Change to the HORM working directory
 cd /home/simonnir/esen_horm/HORM || exit 1
 
-# Activate the local venv (created during setup)
-if [ -f ".venv/bin/activate" ]; then
-    source .venv/bin/activate
-fi
+# Activate the shared project venv
+source /project/rrg-aspuru/snirenbe/HORM/.venv/bin/activate
 
 # Create output directories
 mkdir -p logs checkpoint
@@ -101,7 +108,7 @@ fi
 echo "Starting training..."
 echo ""
 
-CMD="python train_esen_comparison.py \
+CMD="srun python train_esen_comparison.py \
     --mode $TRAINING_MODE \
     --data $TRAIN_DATA \
     --val_data $VAL_DATA \

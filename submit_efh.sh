@@ -1,16 +1,17 @@
 #!/bin/bash
 #SBATCH --job-name=esen-horm-EFH
-#SBATCH --output=logs/esen_EFH_%j.out
-#SBATCH --error=logs/esen_EFH_%j.err
-#SBATCH --time=72:00:00
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --output=/home/simonnir/esen_horm/HORM/logs/esen_EFH_%j.out
+#SBATCH --error=/home/simonnir/esen_horm/HORM/logs/esen_EFH_%j.err
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
 
 # eSEN from scratch — E+F+H (energy + autograd forces + stochastic autograd Hessian rows)
 # NHR=1: one Hessian row per molecule per step (standard for conserving/autograd models)
 # Batch size reduced vs E/EF because Hessian requires create_graph=True (more memory)
+# NOTE: Original estimate was 72h but cluster max is 24h.
+# The auto-resume logic below will pick up last.ckpt on resubmission.
 
 TRAIN_DATA="data/ts1x_hess_train.lmdb"
 VAL_DATA="data/ts1x-val.lmdb"
@@ -26,11 +27,23 @@ echo "eSEN HORM Training: E+F+H (from scratch)"
 echo "Job ID: $SLURM_JOB_ID  Node: $SLURMD_NODENAME"
 echo "================================================"
 
+module load StdEnv/2023 gcc/12.3 cuda/12.6
+
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
+# Set cache dirs to writable locations (avoid permission issues on cluster)
+export UV_CACHE_DIR=/scratch/snirenbe/.cache/uv
+export MPLCONFIGDIR=/scratch/snirenbe/.cache/matplotlib
+export XDG_CACHE_HOME=/scratch/snirenbe/.cache
+export FAIRCHEM_CACHE_DIR=/scratch/snirenbe/.cache/fairchem
+export WANDB_CACHE_DIR=/scratch/snirenbe/wandb
+export WANDB_CONFIG_DIR=/scratch/snirenbe/wandb
+export WANDB_DIR=/scratch/snirenbe/wandb
+mkdir -p "$UV_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME" "$FAIRCHEM_CACHE_DIR" "$WANDB_CACHE_DIR" "$WANDB_DIR"
+
 cd /home/simonnir/esen_horm/HORM || exit 1
-[ -f ".venv/bin/activate" ] && source .venv/bin/activate
+source /project/rrg-aspuru/snirenbe/HORM/.venv/bin/activate
 
 mkdir -p logs checkpoint
 
@@ -48,7 +61,7 @@ else
     echo "No previous checkpoint found — starting fresh."
 fi
 
-python train_esen_comparison.py \
+srun python train_esen_comparison.py \
     --mode efh \
     --data "$TRAIN_DATA" \
     --val_data "$VAL_DATA" \

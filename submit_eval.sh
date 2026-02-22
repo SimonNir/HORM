@@ -1,12 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=esen-horm-eval
-#SBATCH --output=logs/esen_eval_%j.out
-#SBATCH --error=logs/esen_eval_%j.err
+#SBATCH --output=/home/simonnir/esen_horm/HORM/logs/esen_eval_%j.out
+#SBATCH --error=/home/simonnir/esen_horm/HORM/logs/esen_eval_%j.err
 #SBATCH --time=6:00:00
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
 
 # Post-hoc evaluation of trained eSEN checkpoints on E, F, and H.
 #
@@ -42,10 +41,22 @@ echo "Job ID: $SLURM_JOB_ID  Node: $SLURMD_NODENAME"
 echo "Run dir: $RUN_DIR"
 echo "================================================"
 
+module load StdEnv/2023 gcc/12.3 cuda/12.6
+
 export PYTHONUNBUFFERED=1
 
+# Set cache dirs to writable locations (avoid permission issues on cluster)
+export UV_CACHE_DIR=/scratch/snirenbe/.cache/uv
+export MPLCONFIGDIR=/scratch/snirenbe/.cache/matplotlib
+export XDG_CACHE_HOME=/scratch/snirenbe/.cache
+export FAIRCHEM_CACHE_DIR=/scratch/snirenbe/.cache/fairchem
+export WANDB_CACHE_DIR=/scratch/snirenbe/wandb
+export WANDB_CONFIG_DIR=/scratch/snirenbe/wandb
+export WANDB_DIR=/scratch/snirenbe/wandb
+mkdir -p "$UV_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME" "$FAIRCHEM_CACHE_DIR" "$WANDB_CACHE_DIR" "$WANDB_DIR"
+
 cd /home/simonnir/esen_horm/HORM || exit 1
-[ -f ".venv/bin/activate" ] && source .venv/bin/activate
+source /project/rrg-aspuru/snirenbe/HORM/.venv/bin/activate
 
 mkdir -p results
 
@@ -60,7 +71,7 @@ echo "=== In-distribution: ts1x-val ==="
 if [ ! -e "$VAL_DATA" ]; then
     echo "WARNING: val data not found: $VAL_DATA -- skipping"
 else
-    python eval_trained.py \
+    srun python eval_trained.py \
         --run_dir "$RUN_DIR" \
         --data "$VAL_DATA" \
         --output "results/eval_indist.json" \
@@ -73,7 +84,7 @@ echo "=== Out-of-distribution: RGD1 ==="
 if [ ! -e "$RGD1_DATA" ]; then
     echo "WARNING: RGD1 data not found: $RGD1_DATA -- skipping"
 else
-    python eval_trained.py \
+    srun python eval_trained.py \
         --run_dir "$RUN_DIR" \
         --data "$RGD1_DATA" \
         --output "results/eval_ood_rgd1.json" \

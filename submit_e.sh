@@ -39,7 +39,7 @@ export WANDB_CONFIG_DIR=/scratch/snirenbe/wandb
 export WANDB_DIR=/scratch/snirenbe/wandb
 mkdir -p "$UV_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME" "$FAIRCHEM_CACHE_DIR" "$WANDB_CACHE_DIR" "$WANDB_DIR"
 
-cd /home/simonnir/esen_horm/HORM || exit 1
+cd /project/rrg-aspuru/snirenbe/HORM || exit 1
 source /project/rrg-aspuru/snirenbe/HORM/.venv/bin/activate
 
 mkdir -p logs checkpoint

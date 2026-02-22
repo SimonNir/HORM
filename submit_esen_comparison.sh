@@ -86,7 +86,7 @@ export WANDB_DIR=/scratch/snirenbe/wandb
 mkdir -p "$UV_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME" "$FAIRCHEM_CACHE_DIR" "$WANDB_CACHE_DIR" "$WANDB_DIR"
 
 # Change to the HORM working directory
-cd /home/simonnir/esen_horm/HORM || exit 1
+cd /project/rrg-aspuru/snirenbe/HORM || exit 1
 
 # Activate the shared project venv
 source /project/rrg-aspuru/snirenbe/HORM/.venv/bin/activate

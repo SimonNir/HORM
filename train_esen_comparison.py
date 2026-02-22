@@ -53,6 +53,7 @@ def train_variant(
     devices: int = 1,
     from_scratch: bool = False,
     resume_from: str = None,
+    output_dir: str = ".",
 ):
     """
     Train a single variant (E, E+F, or E+F+H).
@@ -172,7 +173,7 @@ def train_variant(
     
     # CSV logger (always enabled for offline analysis)
     csv_logger = CSVLogger(
-        save_dir=f"logs/{project}",
+        save_dir=os.path.join(output_dir, "logs", project),
         name=run_name,
     )
     loggers.append(csv_logger)
@@ -187,12 +188,12 @@ def train_variant(
                 tags=tags,
             )
             loggers.append(wandb_logger)
-            ckpt_path = f"checkpoint/{project}/{wandb_logger.experiment.name}"
+            ckpt_path = os.path.join(output_dir, "checkpoint", project, wandb_logger.experiment.name)
         except Exception as e:
             print(f"Warning: WandB logging failed ({e}). Continuing with CSV only.")
-            ckpt_path = f"checkpoint/{project}/{run_name}"
+            ckpt_path = os.path.join(output_dir, "checkpoint", project, run_name)
     else:
-        ckpt_path = f"checkpoint/{project}/{run_name}"
+        ckpt_path = os.path.join(output_dir, "checkpoint", project, run_name)
     
     # Create checkpoint directory
     os.makedirs(ckpt_path, exist_ok=True)
@@ -280,6 +281,9 @@ def main():
                         help='Train from scratch (random init) instead of fine-tuning pretrained weights')
     parser.add_argument('--resume', type=str, default=None, metavar='CKPT',
                         help='Path to last.ckpt to resume from (restores weights, optimizer, epoch, callbacks)')
+    parser.add_argument('--output_dir', type=str, default='.',
+                        help='Root directory for checkpoints and logs (default: current dir). '
+                             'Use a writable scratch path on clusters where /project is read-only.')
     
     args = parser.parse_args()
     
@@ -344,6 +348,7 @@ def main():
             devices=args.devices,
             from_scratch=args.from_scratch,
             resume_from=args.resume,
+            output_dir=args.output_dir,
         )
         results[variant] = best_ckpt
     

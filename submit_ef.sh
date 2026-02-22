@@ -19,6 +19,7 @@ MAX_EPOCHS=500
 LEARNING_RATE=1e-4
 PATIENCE=50
 PROJECT_NAME="horm-esen-comparison-scratch"
+OUTPUT_DIR="/scratch/snirenbe/esen_horm"
 
 echo "================================================"
 echo "eSEN HORM Training: E+F (from scratch)"
@@ -43,7 +44,7 @@ mkdir -p "$UV_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME" "$FAIRCHEM_CACHE_DIR"
 cd /project/rrg-aspuru/snirenbe/HORM || exit 1
 source /project/rrg-aspuru/snirenbe/HORM/.venv/bin/activate
 
-mkdir -p logs checkpoint
+mkdir -p "$OUTPUT_DIR"
 
 for f in "$TRAIN_DATA" "$VAL_DATA" "$CHECKPOINT"; do
     [ ! -e "$f" ] && echo "ERROR: not found: $f" && exit 1
@@ -51,7 +52,7 @@ done
 
 # Auto-detect last.ckpt from a previous run to resume if job timed out.
 RESUME_FLAG=""
-LAST_CKPT=$(find "checkpoint/$PROJECT_NAME" -name "last.ckpt" -path "*eSEN-ef-scratch*" 2>/dev/null | sort | tail -1)
+LAST_CKPT=$(find "$OUTPUT_DIR/checkpoint/$PROJECT_NAME" -name "last.ckpt" -path "*eSEN-ef-scratch*" 2>/dev/null | sort | tail -1)
 if [ -n "$LAST_CKPT" ]; then
     echo "Found previous checkpoint — resuming from: $LAST_CKPT"
     RESUME_FLAG="--resume $LAST_CKPT"
@@ -59,7 +60,7 @@ else
     echo "No previous checkpoint found — starting fresh."
 fi
 
-srun python train_esen_comparison.py \
+srun /project/rrg-aspuru/snirenbe/HORM/.venv/bin/python train_esen_comparison.py \
     --mode ef \
     --data "$TRAIN_DATA" \
     --val_data "$VAL_DATA" \
@@ -69,6 +70,7 @@ srun python train_esen_comparison.py \
     --max_epochs $MAX_EPOCHS \
     --patience $PATIENCE \
     --project $PROJECT_NAME \
+    --output_dir "$OUTPUT_DIR" \
     --devices 1 \
     --from_scratch \
     $RESUME_FLAG

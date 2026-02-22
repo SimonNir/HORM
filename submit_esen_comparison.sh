@@ -47,6 +47,7 @@ MAX_EPOCHS=500
 LEARNING_RATE=1e-4
 PATIENCE=50          # early stopping
 PROJECT_NAME="horm-esen-comparison-scratch"
+OUTPUT_DIR="/scratch/snirenbe/esen_horm"
 
 # Training mode: 'all' runs e, ef, efh sequentially in one job.
 # Pass MODE env var to override: sbatch --export=MODE=ef submit_esen_comparison.sh
@@ -92,7 +93,7 @@ cd /project/rrg-aspuru/snirenbe/HORM || exit 1
 source /project/rrg-aspuru/snirenbe/HORM/.venv/bin/activate
 
 # Create output directories
-mkdir -p logs checkpoint
+mkdir -p "$OUTPUT_DIR"
 
 # Verify data files exist
 if [ ! -f "$TRAIN_DATA" ] && [ ! -d "$TRAIN_DATA" ]; then
@@ -108,7 +109,7 @@ fi
 echo "Starting training..."
 echo ""
 
-CMD="srun python train_esen_comparison.py \
+CMD="srun /project/rrg-aspuru/snirenbe/HORM/.venv/bin/python train_esen_comparison.py \
     --mode $TRAINING_MODE \
     --data $TRAIN_DATA \
     --val_data $VAL_DATA \
@@ -118,6 +119,7 @@ CMD="srun python train_esen_comparison.py \
     --max_epochs $MAX_EPOCHS \
     --patience $PATIENCE \
     --project $PROJECT_NAME \
+    --output_dir $OUTPUT_DIR \
     --devices 1"
 
 [ "$FROM_SCRATCH" = true ] && CMD="$CMD --from_scratch"

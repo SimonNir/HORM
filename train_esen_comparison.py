@@ -186,6 +186,7 @@ def train_variant(
                 log_model=False,
                 name=run_name,
                 tags=tags,
+                save_dir=output_dir,
             )
             loggers.append(wandb_logger)
             ckpt_path = os.path.join(output_dir, "checkpoint", project, wandb_logger.experiment.name)

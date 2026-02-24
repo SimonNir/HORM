@@ -149,7 +149,7 @@ def train_variant(
         trn_path=data_path,
         val_path=val_data_path,
         bz=batch_size,
-        num_workers=4,
+        num_workers=6,
         clip_grad=True,
         gradient_clip_val=0.1,
         ema=False,
@@ -235,6 +235,7 @@ def train_variant(
         logger=loggers,
         gradient_clip_val=0.1,
         accumulate_grad_batches=1,
+        precision="bf16-mixed",
     )
     
     # Train (resume_from restores weights, optimizer, LR scheduler, epoch, and callback state)

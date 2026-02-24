@@ -4,19 +4,19 @@
 #SBATCH --error=/scratch/snirenbe/esen_horm_logs/esen_EF_%j.err
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
-#SBATCH --gpus-per-node=1
+#SBATCH --gpus-per-node=4
+#SBATCH --ntasks-per-node=4
 #SBATCH --cpus-per-task=8
 #SBATCH --mail-user=simon_nirenberg@brown.edu
 #SBATCH --mail-type=END
+#SBATCH --account=rrg-aspuru
 
 # eSEN from scratch — E+F (energy + autograd forces)
-# NOTE: Original estimate was 36h but cluster max is 24h.
-# The auto-resume logic below will pick up last.ckpt on resubmission.
 
 TRAIN_DATA="data/ts1x_hess_train.lmdb"
 VAL_DATA="data/ts1x-val.lmdb"
 CHECKPOINT="ckpt/esen_sm_conserving_all.pt"
-BATCH_SIZE=32
+BATCH_SIZE=64
 MAX_EPOCHS=500
 LEARNING_RATE=1e-4
 PATIENCE=50
@@ -74,6 +74,6 @@ srun /project/rrg-aspuru/snirenbe/HORM/.venv/bin/python train_esen_comparison.py
     --patience $PATIENCE \
     --project $PROJECT_NAME \
     --output_dir "$OUTPUT_DIR" \
-    --devices 1 \
+    --devices 4 \
     --from_scratch \
     $RESUME_FLAG

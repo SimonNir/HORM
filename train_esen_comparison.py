@@ -228,7 +228,7 @@ def train_variant(
         devices=devices,
         num_nodes=1,
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
-        strategy="ddp_find_unused_parameters_true" if devices > 1 else "auto",
+        strategy="ddp" if devices > 1 else "auto",
         max_epochs=max_epochs,
         callbacks=callbacks,
         default_root_dir=ckpt_path,

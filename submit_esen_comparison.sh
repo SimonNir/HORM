@@ -4,10 +4,12 @@
 #SBATCH --error=/scratch/snirenbe/esen_horm_logs/esen_comparison_%j.err
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
-#SBATCH --gpus-per-node=1
+#SBATCH --gpus-per-node=4
 #SBATCH --cpus-per-task=8
 #SBATCH --mail-user=simon_nirenberg@brown.edu
 #SBATCH --mail-type=END
+#SBATCH --ntasks-per-node=4
+#SBATCH --account=rrg-aspuru
 
 # ESEN Training Comparison on HORM Dataset
 # Trains eSEN from SCRATCH (random init, not from OMol25 pretrained weights)
@@ -123,7 +125,7 @@ CMD="srun /project/rrg-aspuru/snirenbe/HORM/.venv/bin/python train_esen_comparis
     --patience $PATIENCE \
     --project $PROJECT_NAME \
     --output_dir $OUTPUT_DIR \
-    --devices 1"
+    --devices 4"
 
 [ "$FROM_SCRATCH" = true ] && CMD="$CMD --from_scratch"
 [ "$USE_WANDB" = false ]   && CMD="$CMD --no_wandb"

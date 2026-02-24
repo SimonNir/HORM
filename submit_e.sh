@@ -6,6 +6,8 @@
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=8
+#SBATCH --mail-user=simon_nirenberg@brown.edu
+#SBATCH --mail-type=END
 
 # eSEN from scratch — E only (energy supervision only)
 # Autograd forces and hessians are still available at eval time via eval_trained.py

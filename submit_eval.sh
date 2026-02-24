@@ -6,6 +6,8 @@
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=4
+#SBATCH --mail-user=simon_nirenberg@brown.edu
+#SBATCH --mail-type=END
 
 # Post-hoc evaluation of trained eSEN checkpoints on E, F, and H.
 #

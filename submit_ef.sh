@@ -6,6 +6,8 @@
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=8
+#SBATCH --mail-user=simon_nirenberg@brown.edu
+#SBATCH --mail-type=END
 
 # eSEN from scratch — E+F (energy + autograd forces)
 # NOTE: Original estimate was 36h but cluster max is 24h.

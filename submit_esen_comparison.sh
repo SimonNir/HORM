@@ -84,6 +84,7 @@ export FAIRCHEM_CACHE_DIR=/scratch/snirenbe/.cache/fairchem
 export WANDB_CACHE_DIR=/scratch/snirenbe/wandb
 export WANDB_CONFIG_DIR=/scratch/snirenbe/wandb
 export WANDB_DIR=/scratch/snirenbe/wandb
+export WANDB_MODE=offline
 mkdir -p "$UV_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME" "$FAIRCHEM_CACHE_DIR" "$WANDB_CACHE_DIR" "$WANDB_DIR"
 
 # Change to the HORM working directory

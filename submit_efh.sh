@@ -78,3 +78,18 @@ srun /project/rrg-aspuru/snirenbe/HORM/.venv/bin/python train_esen_comparison.py
     --devices 4 \
     --from_scratch \
     $RESUME_FLAG
+STATUS=$?
+
+DEST_DIR="/project/rrg-aspuru/snirenbe/HORM"
+if [ $STATUS -eq 0 ]; then
+    echo "Training complete — copying results to $DEST_DIR"
+    rsync -av --ignore-existing \
+        "$OUTPUT_DIR/checkpoint/$PROJECT_NAME/" \
+        "$DEST_DIR/checkpoint/$PROJECT_NAME/"
+    rsync -av --ignore-existing \
+        "$OUTPUT_DIR/logs/$PROJECT_NAME/" \
+        "$DEST_DIR/logs/$PROJECT_NAME/"
+    echo "Done. Checkpoints and logs copied to project dir."
+else
+    echo "Job ended with status $STATUS (timeout or error) — not copying. Resubmit to resume."
+fi

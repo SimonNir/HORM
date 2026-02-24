@@ -37,44 +37,62 @@ class LmdbDataset(Dataset):
             assert len(db_paths) > 0, f"No LMDBs found in '{self.path}'"
 
             self.metadata_path = self.path / "metadata.npz"
+            self.db_paths = db_paths
 
-            self._keys, self.envs = [], []
+            # Open temporarily just to read lengths, then close
+            self._keys = []
             for db_path in db_paths:
-                self.envs.append(self.connect_db(db_path))
+                env = self.connect_db(db_path)
                 length = pickle.loads(
-                    self.envs[-1].begin().get("length".encode("ascii"))
+                    env.begin().get("length".encode("ascii"))
                 )
                 self._keys.append(list(range(length)))
+                env.close()
 
             keylens = [len(k) for k in self._keys]
             self._keylen_cumulative = np.cumsum(keylens).tolist()
             self.num_samples = sum(keylens)
+            # Lazy: opened per-worker in __getitem__
+            self.envs = None
         else:
             self.metadata_path = self.path.parent / "metadata.npz"
-            self.env = self.connect_db(self.path)
+            # Open temporarily just to read length, then close
+            env = self.connect_db(self.path)
             try:
-                # Try to get the stored length value first
                 self.num_samples = pickle.loads(
-                    self.env.begin().get("length".encode("ascii"))
+                    env.begin().get("length".encode("ascii"))
                 )
             except (TypeError, KeyError):
-                # Fallback to entries count if length key doesn't exist
-                self.num_samples = self.env.stat()["entries"]
-            
+                self.num_samples = env.stat()["entries"]
+            env.close()
+
             self._keys = [
                 f"{j}".encode("ascii")
                 for j in range(self.num_samples)
             ]
+            # Lazy: opened per-worker in __getitem__
+            self.env = None
 
         self.transform = transform
 
     def __len__(self):
         return self.num_samples
 
+    def _get_env(self):
+        """Open LMDB env lazily (once per worker process, after fork)."""
+        if not self.path.is_file():
+            if self.envs is None:
+                self.envs = [self.connect_db(p) for p in self.db_paths]
+        else:
+            if self.env is None:
+                self.env = self.connect_db(self.path)
+
     def __getitem__(self, idx):
         if idx >= self.num_samples:
             raise IndexError(f"Index {idx} out of range for dataset with {self.num_samples} samples")
-        
+
+        self._get_env()
+
         if not self.path.is_file():
             # Figure out which db this should be indexed from.
             db_idx = bisect.bisect(self._keylen_cumulative, idx)
@@ -111,14 +129,18 @@ class LmdbDataset(Dataset):
             lock=False,
             readahead=False,
             meminit=False,
-            max_readers=1,
+            max_readers=128,
             map_size=1099511627776 * 2,
         )
         return env
 
     def close_db(self):
         if not self.path.is_file():
-            for env in self.envs:
-                env.close()
+            if self.envs is not None:
+                for env in self.envs:
+                    env.close()
+                self.envs = None
         else:
-            self.env.close()
+            if self.env is not None:
+                self.env.close()
+                self.env = None

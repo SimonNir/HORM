@@ -149,7 +149,7 @@ def train_variant(
         trn_path=data_path,
         val_path=val_data_path,
         bz=batch_size,
-        num_workers=0,  # LMDB env opened in __init__ is not fork-safe
+        num_workers=4,
         clip_grad=True,
         gradient_clip_val=0.1,
         ema=False,

@@ -130,8 +130,33 @@ class PotentialModule(LightningModule):
                     checkpoint_path=model_config.get('checkpoint_path', 'ckpt/esen_sm_conserving_all.pt'),
                     device=model_config.get('device', 'cuda'),
                 )
+        elif self.model_config['name'] == 'EquiformerV2Direct':
+            print("\n" + "="*60)
+            print("TRAINING EquiformerV2 (Direct Forces, from scratch)")
+            print("="*60 + "\n")
+            from nets.equiformer_v2.equiformer_wrapper import EquiformerV2Wrapper
+            self.potential = EquiformerV2Wrapper(
+                **{k: v for k, v in model_config.items() if k != 'name'}
+            )
+        elif self.model_config['name'] == 'EquiformerV2Conservative':
+            print("\n" + "="*60)
+            print("TRAINING EquiformerV2Conservative (Autograd Forces, from scratch)")
+            print("="*60 + "\n")
+            from nets.equiformer_v2.equiformer_wrapper import EquiformerV2ConservativeWrapper
+            self.potential = EquiformerV2ConservativeWrapper(
+                **{k: v for k, v in model_config.items() if k != 'name'}
+            )
+        elif self.model_config['name'] == 'ESCaIP':
+            print("\n" + "="*60)
+            print("TRAINING ESCaIP (Conservative, from scratch)")
+            print("="*60 + "\n")
+            from nets.escaip.escaip_wrapper import ESCaIPWrapper
+            self.potential = ESCaIPWrapper(
+                **{k: v for k, v in model_config.items() if k != 'name'}
+            )
         else:
-            print("Please Check your model name (choose from 'EquiformerV2', 'AlphaNet', 'LEFTNet', 'LEFTNet-df', 'eSEN')")           
+            print("Please Check your model name (choose from 'eSEN', 'EquiformerV2Direct', "
+                  "'EquiformerV2Conservative', 'ESCaIP', 'EquiformerV2', 'AlphaNet', 'LEFTNet')")
         self.optimizer_config = optimizer_config
         self.training_config = training_config
         self.pos_require_grad = True
@@ -326,12 +351,19 @@ class PotentialModule(LightningModule):
             batch, 
             pos_require_grad=self.pos_require_grad
         )
-        if self.model_config['name'] == 'LEFTNet':
-            hat_ae, hat_forces = self.potential.forward_autograd(
-                batch.to(self.device),
-            )
-        elif self.model_config['name'] == 'eSEN':
-            # eSEN uses forward_autograd for smooth forces
+        # Models that always use autograd forces (conservative: forces = -dE/dx).
+        _always_autograd = {'LEFTNet', 'eSEN', 'EquiformerV2Conservative', 'ESCaIP'}
+        # Models that use direct forces for EF but need autograd forces for EFH,
+        # so that Hessian loss computes the true -d²E/dx² (not Jacobian of force head).
+        _autograd_for_hessian = {'EquiformerV2Direct'}
+        use_hessian = self.training_config.get('use_hessian', False)
+
+        model_name = self.model_config['name']
+        use_autograd = (
+            model_name in _always_autograd
+            or (model_name in _autograd_for_hessian and use_hessian)
+        )
+        if use_autograd:
             hat_ae, hat_forces = self.potential.forward_autograd(
                 batch.to(self.device),
             )
